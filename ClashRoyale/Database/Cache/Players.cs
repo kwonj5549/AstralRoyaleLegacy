@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using ClashRoyale.Logic;
+using ClashRoyale.Utilities.Utils;
 using SharpRaven.Data;
 using ClashRoyale.Logic.Home;
 
@@ -19,7 +20,7 @@ namespace ClashRoyale.Database.Cache
         {
             Player player;
 
-            if (userId <= 0 && string.IsNullOrEmpty(token))
+            if (userId <= 0)
             {
                 player = await PlayerDb.CreateAsync();
             }
@@ -32,8 +33,13 @@ namespace ClashRoyale.Database.Cache
                 else
                     player = await PlayerDb.GetAsync(userId);
 
-                if (player == null) return null;
-                if (player.Home.UserToken != token) return null;
+                if (player == null)
+                    player = await PlayerDb.CreateAsync();
+                else if (player.Home.UserToken != token)
+                {
+                    player.Home.UserToken = GameUtils.GenerateToken;
+                    await PlayerDb.SaveAsync(player);
+                }
             }
 
             lock (SyncObject)
